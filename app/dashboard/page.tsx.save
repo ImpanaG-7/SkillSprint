@@ -1,0 +1,505 @@
+
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase =
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null;
+
+type Profile = {
+  id: string;
+  email: string;
+  xp: number;
+  level: number;
+  streak: number;
+  last_active_date: string | null;
+};
+
+export default function DashboardPage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  async function loadDashboard() {
+    try {
+      setLoading(true);
+      setError("");
+
+      if (!supabase) {
+        setError("Supabase configuration is missing.");
+        setLoading(false);
+        return;
+      }
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (!user) {
+        setError("Please log in.");
+        setLoading(false);
+        return;
+      }
+
+      // Get current profile
+      const { data: profileData, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select(
+            "id, email, xp, level, streak, last_active_date"
+          )
+          .eq("id", user.id)
+          .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Calculate today's date
+      const today = new Date()
+        .toISOString()
+        .split("T")[0];
+
+      let updatedStreak = profileData.streak || 0;
+
+      if (!profileData.last_active_date) {
+        updatedStreak = 1;
+
+        await supabase
+          .from("profiles")
+          .update({
+            streak: updatedStreak,
+            last_active_date: today,
+          })
+          .eq("id", user.id);
+      } else if (profileData.last_active_date !== today) {
+        const lastDate = new Date(
+          `${profileData.last_active_date}T00:00:00`
+        );
+
+        const currentDate = new Date(
+          `${today}T00:00:00`
+        );
+
+        const difference =
+          Math.round(
+            (currentDate.getTime() -
+              lastDate.getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+
+        if (difference === 1) {
+          updatedStreak += 1;
+        } else if (difference > 1) {
+          updatedStreak = 1;
+        }
+
+        await supabase
+          .from("profiles")
+          .update({
+            streak: updatedStreak,
+            last_active_date: today,
+          })
+          .eq("id", user.id);
+      }
+
+      const finalProfile = {
+        ...profileData,
+        streak: updatedStreak,
+        last_active_date: today,
+      };
+
+      setProfile(finalProfile);
+
+      // Get all profiles ordered by XP
+      const { data: allProfiles, error: leaderboardError } =
+        await supabase
+          .from("profiles")
+          .select("id, xp")
+          .order("xp", {
+            ascending: false,
+          });
+
+      if (leaderboardError) {
+        throw leaderboardError;
+      }
+
+      // Calculate current user's rank
+      if (allProfiles) {
+        const currentRank =
+          allProfiles.findIndex(
+            (player) => player.id === user.id
+          ) + 1;
+
+        setRank(
+          currentRank > 0
+            ? currentRank
+            : null
+        );
+      }
+
+    } catch (err) {
+      console.error("Dashboard error:", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-center">
+
+          <div className="text-5xl mb-4">
+            🚀
+          </div>
+
+          <p className="text-slate-400">
+            Loading your dashboard...
+          </p>
+
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white px-6 py-10">
+
+        <div className="max-w-3xl mx-auto">
+
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8">
+
+            <div className="text-5xl mb-4">
+              ⚠️
+            </div>
+
+            <h1 className="text-2xl font-bold mb-3">
+              Dashboard Error
+            </h1>
+
+            <p className="text-red-300">
+              {error}
+            </p>
+
+            <button
+              onClick={loadDashboard}
+              className="mt-6 px-5 py-3 rounded-xl bg-white text-slate-950 font-semibold"
+            >
+              Try Again
+            </button>
+
+          </div>
+
+        </div>
+
+      </main>
+    );
+  }
+
+  const xp = profile?.xp || 0;
+  const level = profile?.level || 1;
+  const streak = profile?.streak || 0;
+
+  const xpPerLevel = 500;
+
+  const currentLevelXP =
+    xp % xpPerLevel;
+
+  const progressPercentage =
+    (currentLevelXP / xpPerLevel) * 100;
+
+  const xpUntilNextLevel =
+    xpPerLevel - currentLevelXP;
+
+  return (
+            <p className="text-slate-400 mt-2">
+              Keep learning, complete challenges and level up.
+            </p>
+
+          </div>
+
+          <button
+            onClick={async () => {
+              await supabase?.auth.signOut();
+              window.location.href = "/login";
+            }}
+            className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold"
+          >
+            Logout
+          </button>
+
+        </div>
+
+        {/* Stats */}
+
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+            <p className="text-slate-400 text-sm">
+              Total XP
+            </p>
+
+            <p className="text-4xl font-bold text-yellow-400 mt-2">
+              {xp}
+            </p>
+
+            <p className="text-slate-500 text-sm mt-2">
+              Experience Points
+            </p>
+
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+            <p className="text-slate-400 text-sm">
+              Level
+            </p>
+
+            <p className="text-4xl font-bold text-purple-400 mt-2">
+              {level}
+            </p>
+
+            <p className="text-slate-500 text-sm mt-2">
+              Keep progressing
+            </p>
+
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+            <p className="text-slate-400 text-sm">
+              Day Streak
+            </p>
+
+            <p className="text-4xl font-bold text-orange-400 mt-2">
+              {streak} 🔥
+            </p>
+
+            <p className="text-slate-500 text-sm mt-2">
+              Keep it going
+            </p>
+
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+            <p className="text-slate-400 text-sm">
+              Campus Rank
+            </p>
+
+            <p className="text-4xl font-bold text-emerald-400 mt-2">
+              {rank ? `#${rank}` : "—"}
+            </p>
+
+            <p className="text-slate-500 text-sm mt-2">
+              Based on XP
+            </p>
+
+          </div>
+
+        </section>
+
+        {/* Progress */}
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-8 mb-10">
+
+          <div className="flex items-center justify-between mb-4">
+
+            <div>
+
+              <h2 className="text-2xl font-bold">
+                Level Progress
+              </h2>
+
+              <p className="text-slate-400 mt-1">
+                {xpUntilNextLevel} XP until Level {level + 1}
+              </p>
+
+            </div>
+
+            <span className="text-emerald-400 font-semibold">
+              {Math.round(progressPercentage)}%
+            </span>
+
+          </div>
+
+          <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden">
+
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all"
+              style={{
+                width: `${progressPercentage}%`,
+              }}
+            />
+
+          </div>
+
+          <div className="flex justify-between text-sm text-slate-500 mt-3">
+
+            <span>
+              Level {level}
+            </span>
+
+            <span>
+              {currentLevelXP} / {xpPerLevel} XP
+            </span>
+
+          </div>
+
+        </section>
+
+        {/* Quick Actions */}
+
+        <section className="mb-10">
+
+          <h2 className="text-2xl font-bold mb-6">
+            Continue Your Journey 🚀
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <a
+              href="/learn"
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-6 hover:border-emerald-500/50 transition"
+            >
+
+              <div className="text-4xl mb-4">
+                📚
+              </div>
+
+              <h3 className="text-xl font-bold">
+                Learn
+              </h3>
+
+              <p className="text-slate-400 text-sm mt-2">
+                Explore subjects and lessons.
+              </p>
+
+            </a>
+
+            <a
+              href="/missions"
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-6 hover:border-blue-500/50 transition"
+            >
+
+              <div className="text-4xl mb-4">
+                🎯
+              </div>
+
+              <h3 className="text-xl font-bold">
+                Missions
+              </h3>
+
+              <p className="text-slate-400 text-sm mt-2">
+                Solve real-world challenges.
+              </p>
+
+            </a>
+
+            <a
+              href="/rewards"
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-6 hover:border-yellow-500/50 transition"
+            >
+
+              <div className="text-4xl mb-4">
+                🏆
+              </div>
+
+              <h3 className="text-xl font-bold">
+                Rewards
+              </h3>
+
+              <p className="text-slate-400 text-sm mt-2">
+                Unlock badges and achievements.
+              </p>
+
+            </a>
+
+            <a
+              href="/leaderboard"
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-6 hover:border-purple-500/50 transition"
+            >
+
+              <div className="text-4xl mb-4">
+                🥇
+              </div>
+
+              <h3 className="text-xl font-bold">
+                Leaderboard
+              </h3>
+
+              <p className="text-slate-400 text-sm mt-2">
+                See your campus ranking.
+              </p>
+
+            </a>
+
+          </div>
+
+        </section>
+
+        {/* Signature Challenge */}
+
+        <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-8">
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
+            <div>
+
+              <p className="text-cyan-400 font-semibold mb-2">
+                CROSS-DOMAIN LEARNING
+              </p>
+
+              <h2 className="text-2xl font-bold">
+                Campus Water Challenge 💧
+              </h2>
+
+              <p className="text-slate-400 mt-2 max-w-2xl">
+                Apply Mathematics, Science, Computer Science and
+                Environment knowledge to solve one real-world problem.
+              </p>
+
+            </div>
+
+            <a
+              href="/missions/campus-water"
+              className="px-6 py-3 rounded-xl bg-cyan-400 text-slate-950 font-bold whitespace-nowrap hover:bg-cyan-300"
+            >
+              View Challenge
+            </a>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+  );
+}

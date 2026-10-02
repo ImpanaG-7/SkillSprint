@@ -1,26 +1,247 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #171447;
+  --foreground: #f5f3ff;
+  --cosmic-purple: #8b5cf6;
+  --cosmic-cyan: #22d3ee;
+  --cosmic-pink: #e879f9;
+  --cosmic-coral: #fb7185;
+  --cosmic-blue: #3b82f6;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  margin: 0;
+  min-height: 100vh;
   color: var(--foreground);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.32), transparent 28%),
+    radial-gradient(circle at 85% 20%, rgba(34, 211, 238, 0.2), transparent 25%),
+    radial-gradient(circle at 50% 90%, rgba(232, 121, 249, 0.2), transparent 30%),
+    linear-gradient(135deg, #171447 0%, #211957 45%, #29205f 100%);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Cosmic atmosphere */
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(80px);
+  animation: cosmicFloat 10s ease-in-out infinite alternate;
+}
+
+body::before {
+  width: 320px;
+  height: 320px;
+  top: 8%;
+  left: -100px;
+  background: rgba(139, 92, 246, 0.22);
+}
+
+body::after {
+  width: 280px;
+  height: 280px;
+  right: -80px;
+  bottom: 10%;
+  background: rgba(34, 211, 238, 0.18);
+  animation-delay: 2s;
+}
+
+@keyframes cosmicFloat {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(30px, -25px, 0) scale(1.12);
+  }
+}
+
+/* Glass surface */
+
+.cosmic-glass {
+  background: rgba(38, 31, 91, 0.58);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  box-shadow:
+    0 20px 60px rgba(10, 7, 40, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Cosmic text */
+
+.cosmic-gradient-text {
+  background: linear-gradient(
+    100deg,
+    #22d3ee,
+    #8b5cf6,
+    #e879f9,
+    #fb7185
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 250% auto;
+  animation: gradientMove 6s ease infinite;
+}
+
+@keyframes gradientMove {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+
+  50% {
+    background-position: 100% center;
+  }
+}
+
+/* Glow button */
+
+.cosmic-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6, #06b6d4);
+  box-shadow:
+    0 10px 30px rgba(124, 58, 237, 0.3),
+    0 0 25px rgba(34, 211, 238, 0.12);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.cosmic-button:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 16px 40px rgba(124, 58, 237, 0.4),
+    0 0 35px rgba(34, 211, 238, 0.2);
+}
+
+.cosmic-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+
+.cosmic-button:hover::after {
+  left: 140%;
+}
+
+/* Card hover */
+
+.cosmic-card {
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.cosmic-card:hover {
+  transform: translateY(-7px);
+  border-color: rgba(167, 139, 250, 0.42);
+  box-shadow:
+    0 20px 45px rgba(10, 7, 40, 0.28),
+    0 0 30px rgba(139, 92, 246, 0.08);
+}
+
+/* Page entrance */
+
+.cosmic-enter {
+  animation: cosmicEnter 0.7s ease both;
+}
+
+@keyframes cosmicEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Floating animation */
+
+.cosmic-float {
+  animation: floating 5s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Star particles */
+
+.cosmic-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.45;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle, rgba(34, 211, 238, 0.45) 1px, transparent 1px);
+  background-size:
+    90px 90px,
+    140px 140px;
+  background-position:
+    10px 20px,
+    50px 80px;
+}
+
+/* Selection */
+
+::selection {
+  background: rgba(139, 92, 246, 0.5);
+  color: white;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #19164a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(#8b5cf6, #22d3ee);
+  border-radius: 999px;
 }
