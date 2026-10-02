@@ -220,7 +220,7 @@ export default function PythonQuizPage() {
 
             {!saveError && (
               <div className="mx-auto mt-6 max-w-lg rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
-                ✓ XP saved to your EcoQuest profile
+                ✓ XP saved to your SkillSprint profile
               </div>
             )}
 

@@ -2,6 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  Flame,
+  LogOut,
+  Medal,
+  Target,
+  Trophy,
+  Sparkles,
+  Droplets,
+  Brain,
+  BarChart3,
+} from "lucide-react";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -84,9 +98,7 @@ export default function DashboardPage() {
             last_active_date: today,
           })
           .eq("id", user.id);
-      } else if (
-        profileData.last_active_date !== today
-      ) {
+      } else if (profileData.last_active_date !== today) {
         const lastDate = new Date(
           `${profileData.last_active_date}T00:00:00`
         );
@@ -159,34 +171,29 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleLogout() {
+    await supabase?.auth.signOut();
+    window.location.href = "/login";
+  }
+
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <div className="cosmic-stars" />
-
-        <div className="text-center cosmic-enter">
-          <div className="text-6xl mb-5 cosmic-float">
-            🚀
+      <main className="min-h-screen bg-[#f8f7f4] flex items-center justify-center px-6">
+        <div className="w-full max-w-sm text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-100 text-pink-600">
+            <Sparkles size={26} />
           </div>
 
-          <h1 className="text-2xl font-bold">
-            Loading your{" "}
-            <span className="cosmic-gradient-text">
-              learning universe
-            </span>
+          <h1 className="text-xl font-bold text-slate-900">
+            Preparing your dashboard
           </h1>
 
-          <div className="mt-5 mx-auto w-48 h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: "70%",
-                background:
-                  "linear-gradient(90deg,#22d3ee,#8b5cf6,#e879f9)",
-                animation:
-                  "dashboardLoading 1.4s ease-in-out infinite",
-              }}
-            />
+          <p className="mt-2 text-sm text-slate-500">
+            Loading your learning progress...
+          </p>
+
+          <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-full w-2/3 animate-pulse rounded-full bg-pink-500" />
           </div>
         </div>
       </main>
@@ -195,30 +202,31 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen px-6 py-10">
-        <div className="cosmic-stars" />
+      <main className="min-h-screen bg-[#f8f7f4] px-5 py-12">
+        <div className="mx-auto max-w-xl">
+          <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+              <Target size={23} />
+            </div>
 
-        <div className="max-w-3xl mx-auto cosmic-enter">
-          <div className="cosmic-glass rounded-3xl p-8 border border-red-400/20">
-            <div className="text-5xl mb-5">⚠️</div>
-
-            <p className="text-red-300 font-semibold mb-2">
-              DASHBOARD ERROR
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+              Dashboard error
             </p>
 
-            <h1 className="text-3xl font-bold mb-3">
+            <h1 className="mt-2 text-2xl font-bold text-slate-900">
               Something went wrong
             </h1>
 
-            <p className="text-slate-300">
+            <p className="mt-3 text-slate-600">
               {error}
             </p>
 
             <button
               onClick={loadDashboard}
-              className="cosmic-button mt-7 px-6 py-3 rounded-xl text-white font-bold"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              Try Again
+              Try again
+              <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -241,476 +249,596 @@ export default function DashboardPage() {
   const xpUntilNextLevel =
     xpPerLevel - currentLevelXP;
 
+  const displayName =
+    profile?.email?.split("@")[0] || "Learner";
+
   return (
-    <main className="min-h-screen px-5 md:px-8 py-8 md:py-12 relative overflow-hidden">
-      <div className="cosmic-stars" />
-
-      {/* Animated background orbs */}
-      <div className="absolute top-20 -left-32 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl cosmic-orb" />
-
-      <div
-        className="absolute top-96 -right-32 w-96 h-96 rounded-full bg-purple-500/10 blur-3xl cosmic-orb"
-        style={{ animationDelay: "2s" }}
-      />
-
-      <div
-        className="absolute bottom-40 left-1/3 w-72 h-72 rounded-full bg-pink-500/10 blur-3xl cosmic-orb"
-        style={{ animationDelay: "4s" }}
-      />
-
-      <div className="max-w-7xl mx-auto relative z-10">
+    <main className="min-h-screen bg-[#f8f7f4] text-slate-900">
+      <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
 
         {/* HEADER */}
-        <section className="cosmic-enter mb-10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <p className="text-cyan-300 font-bold tracking-[0.25em] text-sm mb-3">
-                YOUR LEARNING UNIVERSE
-              </p>
+        <section className="mb-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight">
-                Welcome back{" "}
-                <span className="cosmic-gradient-text">
-                  👋
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Learning dashboard
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
+                Welcome back,{" "}
+                <span className="text-pink-600">
+                  {displayName}
                 </span>
               </h1>
 
-              <p className="text-slate-300 text-lg mt-3 max-w-2xl">
-                Keep learning, complete challenges,
-                earn XP and level up your skills.
+              <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
+                Continue learning, solve real-world challenges,
+                and build skills that you can demonstrate.
               </p>
             </div>
 
             <button
-              onClick={async () => {
-                await supabase?.auth.signOut();
-                window.location.href = "/login";
-              }}
-              className="cosmic-glass px-6 py-3 rounded-xl font-semibold hover:bg-white/10 hover:-translate-y-1 transition-all duration-300"
+              onClick={handleLogout}
+              className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
             >
+              <LogOut size={16} />
               Logout
             </button>
+
+          </div>
+        </section>
+
+        {/* MAIN PROGRESS CARD */}
+        <section className="mb-6 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
+
+          <div className="grid lg:grid-cols-[1.5fr_1fr]">
+
+            <div className="p-7 md:p-9">
+
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-pink-600">
+                    Your progress
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-bold text-slate-950 md:text-3xl">
+                    Level {level}
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Keep learning to reach your next level.
+                  </p>
+                </div>
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
+                  <Award size={23} />
+                </div>
+              </div>
+
+              <div className="mt-8">
+
+                <div className="mb-3 flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-600">
+                    Level {level}
+                  </span>
+
+                  <span className="font-semibold text-slate-900">
+                    {currentLevelXP} / {xpPerLevel} XP
+                  </span>
+                </div>
+
+                <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-pink-500 transition-all duration-700"
+                    style={{
+                      width: `${progressPercentage}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                  <span>
+                    {Math.round(progressPercentage)}% complete
+                  </span>
+
+                  <span>
+                    {xpUntilNextLevel} XP to Level {level + 1}
+                  </span>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 bg-[#fff8fb] p-7 lg:border-l lg:border-t-0 md:p-9">
+
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                Learning identity
+              </p>
+
+              <div className="mt-5 flex items-center gap-4">
+
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-xl font-bold text-white">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+
+                <div>
+                  <p className="font-bold text-slate-950">
+                    Level {level} Learner
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Building real-world skills
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="mt-7 flex items-center gap-2 text-sm font-medium text-slate-600">
+                <Sparkles
+                  size={16}
+                  className="text-pink-500"
+                />
+                Keep your learning streak alive.
+              </div>
+
+            </div>
+
           </div>
         </section>
 
         {/* STATS */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* XP */}
-          <div
-            className="dashboard-card cosmic-glass rounded-3xl p-6 cosmic-enter"
-            style={{ animationDelay: "100ms" }}
-          >
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-4xl stat-icon">
-                ⚡
-              </span>
 
-              <span className="text-xs font-bold tracking-widest text-cyan-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Sparkles size={19} />
+              </div>
+
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 XP
               </span>
+
             </div>
 
-            <p className="text-slate-300 text-sm mt-6">
+            <p className="mt-5 text-sm text-slate-500">
               Total XP
             </p>
 
-            <p className="text-4xl font-black mt-1 cosmic-gradient-text">
+            <p className="mt-1 text-3xl font-bold text-slate-950">
               {xp}
-            </p>
-
-            <p className="text-slate-400 text-sm mt-2">
-              Experience Points
             </p>
           </div>
 
           {/* LEVEL */}
-          <div
-            className="dashboard-card cosmic-glass rounded-3xl p-6 cosmic-enter"
-            style={{ animationDelay: "200ms" }}
-          >
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-4xl stat-icon">
-                🌟
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Medal size={19} />
+              </div>
+
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Level
               </span>
 
-              <span className="text-xs font-bold tracking-widest text-purple-300">
-                LEVEL
-              </span>
             </div>
 
-            <p className="text-slate-300 text-sm mt-6">
-              Current Level
+            <p className="mt-5 text-sm text-slate-500">
+              Current level
             </p>
 
-            <p className="text-4xl font-black mt-1 text-purple-300">
+            <p className="mt-1 text-3xl font-bold text-slate-950">
               {level}
-            </p>
-
-            <p className="text-slate-400 text-sm mt-2">
-              Keep progressing
             </p>
           </div>
 
           {/* STREAK */}
-          <div
-            className="dashboard-card cosmic-glass rounded-3xl p-6 cosmic-enter"
-            style={{ animationDelay: "300ms" }}
-          >
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-4xl stat-icon">
-                🔥
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <Flame size={19} />
+              </div>
+
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Streak
               </span>
 
-              <span className="text-xs font-bold tracking-widest text-orange-300">
-                STREAK
-              </span>
             </div>
 
-            <p className="text-slate-300 text-sm mt-6">
-              Day Streak
+            <p className="mt-5 text-sm text-slate-500">
+              Learning streak
             </p>
 
-            <p className="text-4xl font-black mt-1 text-orange-300">
+            <p className="mt-1 text-3xl font-bold text-slate-950">
               {streak}
-            </p>
-
-            <p className="text-slate-400 text-sm mt-2">
-              Keep it going
+              <span className="ml-1 text-base font-medium text-slate-400">
+                days
+              </span>
             </p>
           </div>
 
           {/* RANK */}
-          <div
-            className="dashboard-card cosmic-glass rounded-3xl p-6 cosmic-enter"
-            style={{ animationDelay: "400ms" }}
-          >
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-4xl stat-icon">
-                🏆
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <Trophy size={19} />
+              </div>
+
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Rank
               </span>
 
-              <span className="text-xs font-bold tracking-widest text-pink-300">
-                RANK
-              </span>
             </div>
 
-            <p className="text-slate-300 text-sm mt-6">
-              Campus Rank
+            <p className="mt-5 text-sm text-slate-500">
+              Campus ranking
             </p>
 
-            <p className="text-4xl font-black mt-1 text-pink-300">
+            <p className="mt-1 text-3xl font-bold text-slate-950">
               {rank ? `#${rank}` : "—"}
             </p>
-
-            <p className="text-slate-400 text-sm mt-2">
-              Based on XP
-            </p>
           </div>
+
         </section>
 
-        {/* LEVEL PROGRESS */}
-        <section className="cosmic-glass rounded-3xl p-7 md:p-9 mb-10 cosmic-enter">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-5">
-            <div>
-              <p className="text-purple-300 text-sm font-bold tracking-widest uppercase">
-                LEVEL UP
-              </p>
+        {/* JOURNEY */}
+        <section className="mb-8">
 
-              <h2 className="text-2xl md:text-3xl font-bold mt-1">
-                Level {level} Progress
-              </h2>
-
-              <p className="text-slate-400 mt-2">
-                {xpUntilNextLevel} XP until Level{" "}
-                {level + 1}
-              </p>
-            </div>
-
-            <div className="text-3xl font-black cosmic-gradient-text">
-              {Math.round(progressPercentage)}%
-            </div>
-          </div>
-
-          <div className="w-full h-5 bg-white/10 rounded-full overflow-hidden border border-white/10">
-            <div
-              className="h-full rounded-full progress-glow"
-              style={{
-                width: `${progressPercentage}%`,
-                background:
-                  "linear-gradient(90deg,#22d3ee,#8b5cf6,#e879f9,#fb7185)",
-              }}
-            />
-          </div>
-
-          <div className="flex justify-between text-sm text-slate-400 mt-3">
-            <span>
-              Level {level}
-            </span>
-
-            <span>
-              {currentLevelXP} / {xpPerLevel} XP
-            </span>
-
-            <span>
-              Level {level + 1}
-            </span>
-          </div>
-        </section>
-
-        {/* QUICK ACTIONS */}
-        <section className="mb-10 cosmic-enter">
-          <div className="mb-6">
-            <p className="text-cyan-300 text-sm font-bold tracking-widest uppercase">
-              EXPLORE
+          <div className="mb-5">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+              Your learning journey
             </p>
 
-            <h2 className="text-3xl md:text-4xl font-black mt-1">
-              Continue Your Journey 🚀
+            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+              What do you want to do next?
             </h2>
 
-            <p className="text-slate-400 mt-2">
-              Choose your next learning destination.
+            <p className="mt-2 text-sm text-slate-500">
+              Learn concepts, apply them, and turn your work into achievements.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 
             {/* LEARN */}
             <a
               href="/learn"
-              className="dashboard-card cosmic-glass rounded-3xl p-6 group"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-cyan-400/10 border border-cyan-300/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                📚
+              <div className="flex items-center justify-between">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <BookOpen size={22} />
+                </div>
+
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                />
+
               </div>
 
-              <h3 className="text-xl font-bold mt-5">
+              <h3 className="mt-5 text-lg font-bold text-slate-950">
                 Learn
               </h3>
 
-              <p className="text-slate-400 text-sm mt-2">
-                Explore subjects, lessons and knowledge.
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Explore Mathematics, Science, Environment and Computer Science.
               </p>
 
-              <p className="text-cyan-300 font-semibold mt-5">
-                Start learning →
+              <p className="mt-5 text-sm font-semibold text-blue-600">
+                Explore lessons
               </p>
             </a>
 
             {/* MISSIONS */}
             <a
               href="/missions"
-              className="dashboard-card cosmic-glass rounded-3xl p-6 group"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-purple-400/10 border border-purple-300/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                🎯
+              <div className="flex items-center justify-between">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <Target size={22} />
+                </div>
+
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-emerald-600"
+                />
+
               </div>
 
-              <h3 className="text-xl font-bold mt-5">
+              <h3 className="mt-5 text-lg font-bold text-slate-950">
                 Missions
               </h3>
 
-              <p className="text-slate-400 text-sm mt-2">
-                Solve real-world challenges and earn XP.
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Solve practical challenges and apply what you learn.
               </p>
 
-              <p className="text-purple-300 font-semibold mt-5">
-                View missions →
+              <p className="mt-5 text-sm font-semibold text-emerald-600">
+                View missions
+              </p>
+            </a>
+
+            {/* AI MENTOR */}
+            <a
+              href="/assistant"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-pink-200 hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+                  <Brain size={22} />
+                </div>
+
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-pink-600"
+                />
+
+              </div>
+
+              <h3 className="mt-5 text-lg font-bold text-slate-950">
+                AI Mentor
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Ask questions, get hints and learn concepts step by step.
+              </p>
+
+              <p className="mt-5 text-sm font-semibold text-pink-600">
+                Ask your mentor
               </p>
             </a>
 
             {/* REWARDS */}
             <a
               href="/rewards"
-              className="dashboard-card cosmic-glass rounded-3xl p-6 group"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-md"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-yellow-400/10 border border-yellow-300/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                🏆
+              <div className="flex items-center justify-between">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Award size={22} />
+                </div>
+
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-amber-600"
+                />
+
               </div>
 
-              <h3 className="text-xl font-bold mt-5">
+              <h3 className="mt-5 text-lg font-bold text-slate-950">
                 Rewards
               </h3>
 
-              <p className="text-slate-400 text-sm mt-2">
-                Unlock badges and achievements.
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Track badges, achievements and your learning milestones.
               </p>
 
-              <p className="text-yellow-300 font-semibold mt-5">
-                View rewards →
-              </p>
-            </a>
-
-            {/* LEADERBOARD */}
-            <a
-              href="/leaderboard"
-              className="dashboard-card cosmic-glass rounded-3xl p-6 group"
-            >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-pink-400/10 border border-pink-300/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                🥇
-              </div>
-
-              <h3 className="text-xl font-bold mt-5">
-                Leaderboard
-              </h3>
-
-              <p className="text-slate-400 text-sm mt-2">
-                See your campus ranking and XP.
-              </p>
-
-              <p className="text-pink-300 font-semibold mt-5">
-                View leaderboard →
+              <p className="mt-5 text-sm font-semibold text-amber-600">
+                View rewards
               </p>
             </a>
+
           </div>
         </section>
 
-        {/* CAMPUS WATER CHALLENGE */}
-        <section className="relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-purple-500/10 to-pink-400/10 p-7 md:p-10 mb-8 cosmic-enter">
+        {/* LEARNING WORLD / PORTFOLIO */}
+        <section className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl cosmic-orb" />
+          <a
+            href="/world"
+            className="group rounded-2xl border border-slate-200 bg-slate-900 p-7 text-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="flex items-start justify-between gap-5">
 
-          <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-purple-500/10 blur-3xl cosmic-orb" />
+              <div>
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
+                  <Sparkles size={21} />
+                </div>
 
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            <div>
-              <p className="text-cyan-300 font-bold tracking-widest text-sm">
-                SIGNATURE CHALLENGE
-              </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Interactive learning
+                </p>
 
-              <h2 className="text-3xl md:text-4xl font-black mt-3">
-                Campus Water Challenge 💧
+                <h2 className="mt-2 text-2xl font-bold">
+                  Enter the 3D Learning World
+                </h2>
+
+                <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
+                  Explore the campus, discover missions and interact with your learning environment.
+                </p>
+              </div>
+
+              <ArrowRight
+                size={20}
+                className="shrink-0 text-slate-500 transition group-hover:translate-x-1 group-hover:text-white"
+              />
+
+            </div>
+          </a>
+
+          <a
+            href="/portfolio"
+            className="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-5">
+
+              <div>
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                  <BarChart3 size={21} />
+                </div>
+
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500">
+                  Your achievements
+                </p>
+
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  Build Your Portfolio
+                </h2>
+
+                <p className="mt-3 max-w-md text-sm leading-6 text-slate-500">
+                  Turn completed missions, evidence and achievements into a digital learning portfolio.
+                </p>
+              </div>
+
+              <ArrowRight
+                size={20}
+                className="shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-violet-600"
+              />
+
+            </div>
+          </a>
+
+        </section>
+
+        {/* SIGNATURE CHALLENGE */}
+        <section className="mb-8 overflow-hidden rounded-[28px] border border-sky-200 bg-[#f2f9ff]">
+
+          <div className="grid lg:grid-cols-[1.5fr_0.7fr]">
+
+            <div className="p-7 md:p-9">
+
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+                <Droplets size={15} />
+                Signature challenge
+              </div>
+
+              <h2 className="mt-3 text-2xl font-bold text-slate-950 md:text-3xl">
+                Campus Water Challenge
               </h2>
 
-              <p className="text-slate-300 mt-4 max-w-2xl leading-relaxed">
-                Apply Mathematics, Science, Computer Science
-                and Environment knowledge to solve one
-                real-world problem.
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+                Apply Mathematics, Science, Computer Science and Environment knowledge to investigate a real-world campus problem.
               </p>
 
-              <div className="flex flex-wrap gap-2 mt-5">
-                <span className="px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-300/20 text-cyan-200 text-sm">
+              <div className="mt-5 flex flex-wrap gap-2">
+
+                <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700">
                   Mathematics
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-purple-400/10 border border-purple-300/20 text-purple-200 text-sm">
+                <span className="rounded-full bg-orange-100 px-3 py-1.5 text-xs font-semibold text-orange-700">
                   Science
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-pink-400/10 border border-pink-300/20 text-pink-200 text-sm">
+                <span className="rounded-full bg-pink-100 px-3 py-1.5 text-xs font-semibold text-pink-700">
                   Computer Science
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-emerald-400/10 border border-emerald-300/20 text-emerald-200 text-sm">
+                <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                   Environment
                 </span>
+
               </div>
+
             </div>
 
-            <a
-              href="/missions/campus-water"
-              className="cosmic-button px-7 py-4 rounded-2xl text-white font-bold whitespace-nowrap text-center"
-            >
-              View Challenge →
-            </a>
+            <div className="flex items-center border-t border-sky-200 bg-white/60 p-7 lg:border-l lg:border-t-0 md:p-9">
+
+              <div className="w-full">
+
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+                    <Droplets size={21} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-bold text-slate-950">
+                      +150 XP
+                    </p>
+
+                    <p className="text-xs text-slate-500">
+                      Cross-domain mission
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href="/missions/campus-water"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Open challenge
+                  <ArrowRight size={16} />
+                </a>
+
+              </div>
+
+            </div>
+
           </div>
+
         </section>
 
-        {/* FOOTER MESSAGE */}
-        <div className="text-center py-8">
-          <p className="text-slate-500 text-sm">
+        {/* BOTTOM NAVIGATION */}
+        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+            <div>
+              <p className="text-sm font-bold text-slate-950">
+                Keep exploring
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Your learning progress is saved automatically.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+
+              <a
+                href="/leaderboard"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                <Trophy size={14} />
+                Leaderboard
+              </a>
+
+              <a
+                href="/streak"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                <Flame size={14} />
+                Streak
+              </a>
+
+              <a
+                href="/portfolio"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                <BarChart3 size={14} />
+                Portfolio
+              </a>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <footer className="py-7 text-center">
+          <p className="text-sm font-medium text-slate-500">
             Learn something new. Solve something real.
           </p>
 
-          <p className="text-slate-600 text-xs mt-2">
-            Your progress is saved automatically.
+          <p className="mt-1 text-xs text-slate-400">
+            SkillSprint — Smart Learning Platform
           </p>
-        </div>
+        </footer>
+
       </div>
-
-      {/* Dashboard-specific animations */}
-      <style jsx>{`
-        .dashboard-card {
-          transition:
-            transform 0.35s ease,
-            border-color 0.35s ease,
-            box-shadow 0.35s ease;
-        }
-
-        .dashboard-card:hover {
-          transform: translateY(-8px);
-          border-color: rgba(139, 92, 246, 0.45);
-          box-shadow:
-            0 20px 50px rgba(10, 7, 40, 0.35),
-            0 0 35px rgba(139, 92, 246, 0.12);
-        }
-
-        .stat-icon {
-          animation: statFloat 4s ease-in-out infinite;
-        }
-
-        .progress-glow {
-          animation: progressPulse 2.5s ease-in-out infinite;
-          transition: width 1s ease;
-        }
-
-        .cosmic-orb {
-          animation: orbFloat 8s ease-in-out infinite alternate;
-        }
-
-        @keyframes statFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-7px);
-          }
-        }
-
-        @keyframes progressPulse {
-          0%,
-          100% {
-            box-shadow:
-              0 0 10px rgba(34, 211, 238, 0.25);
-          }
-
-          50% {
-            box-shadow:
-              0 0 28px rgba(139, 92, 246, 0.6);
-          }
-        }
-
-        @keyframes orbFloat {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-
-          50% {
-            transform: translate3d(35px, -25px, 0) scale(1.12);
-          }
-
-          100% {
-            transform: translate3d(-20px, 30px, 0) scale(0.95);
-          }
-        }
-
-        @keyframes dashboardLoading {
-          0% {
-            transform: translateX(-120%);
-          }
-
-          50% {
-            transform: translateX(40%);
-          }
-
-          100% {
-            transform: translateX(160%);
-          }
-        }
-      `}</style>
     </main>
   );
 }

@@ -1,83 +1,130 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Bot,
+  Droplets,
+  GraduationCap,
+  Map,
+  Trophy,
+  X,
+  Zap,
+} from "lucide-react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text } from "@react-three/drei";
-import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { useRouter } from "next/navigation";
 
-function Ground() {
-  return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
-        <planeGeometry args={[30, 30]} />
-        <meshStandardMaterial color="#dff3e4" />
-      </mesh>
+type Mission = {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  color: string;
+};
 
-      <mesh position={[0, -0.08, 0]}>
-        <boxGeometry args={[30, 0.2, 30]} />
-        <meshStandardMaterial color="#b8d8c0" />
-      </mesh>
-    </group>
-  );
-}
+const missions: Mission[] = [
+  {
+    id: "ai",
+    title: "AI Mentor",
+    description: "Ask questions and learn with your AI mentor.",
+    icon: <Bot className="h-4 w-4" />,
+    href: "/assistant",
+    color: "bg-pink-100 text-pink-700",
+  },
+  {
+    id: "water",
+    title: "Water Mission",
+    description: "Investigate campus water usage.",
+    icon: <Droplets className="h-4 w-4" />,
+    href: "/missions/campus-water",
+    color: "bg-blue-100 text-blue-700",
+  },
+  {
+    id: "rewards",
+    title: "Rewards",
+    description: "View your achievements and XP.",
+    icon: <Trophy className="h-4 w-4" />,
+    href: "/rewards",
+    color: "bg-amber-100 text-amber-700",
+  },
+];
 
-function Building({
+function CampusBuilding({
   position,
   color,
+  width,
+  depth,
+  height,
   label,
-  width = 4,
-  depth = 3,
-  height = 2.5,
 }: {
   position: [number, number, number];
   color: string;
+  width: number;
+  depth: number;
+  height: number;
   label: string;
-  width?: number;
-  depth?: number;
-  height?: number;
 }) {
   return (
     <group position={position}>
-      <mesh position={[0, height / 2, 0]}>
+      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial color={color} />
       </mesh>
 
-      <mesh position={[0, height + 0.35, 0]}>
-        <coneGeometry args={[width * 0.7, 0.7, 4]} />
-        <meshStandardMaterial color="#475569" />
+      <mesh position={[0, height + 0.08, 0]} castShadow>
+        <boxGeometry args={[width + 0.25, 0.16, depth + 0.25]} />
+        <meshStandardMaterial color="#334155" />
       </mesh>
 
       <Text
-        position={[0, height + 0.8, 0]}
-        fontSize={0.35}
-        color="#172033"
+        position={[0, height + 0.65, depth / 2 + 0.05]}
+        rotation={[0, 0, 0]}
+        fontSize={0.28}
+        color="#1e293b"
         anchorX="center"
         anchorY="middle"
       >
         {label}
       </Text>
 
-      <mesh position={[0, 1, depth / 2 + 0.02]}>
-        <boxGeometry args={[0.8, 1.4, 0.08]} />
-        <meshStandardMaterial color="#334155" />
-      </mesh>
+      {/* Windows */}
+      {[-1, 0, 1].map((x) => (
+        <mesh
+          key={x}
+          position={[
+            x * Math.min(width / 3, 1.1),
+            height * 0.58,
+            depth / 2 + 0.02,
+          ]}
+        >
+          <boxGeometry args={[0.35, 0.42, 0.05]} />
+          <meshStandardMaterial color="#dbeafe" />
+        </mesh>
+      ))}
     </group>
   );
 }
 
-function Tree({ position }: { position: [number, number, number] }) {
+function Tree({
+  position,
+  scale = 1,
+}: {
+  position: [number, number, number];
+  scale?: number;
+}) {
   return (
-    <group position={position}>
-      <mesh position={[0, 0.8, 0]}>
-        <cylinderGeometry args={[0.18, 0.25, 1.6, 8]} />
-        <meshStandardMaterial color="#8b5a2b" />
+    <group position={position} scale={scale}>
+      <mesh position={[0, 0.7, 0]} castShadow>
+        <cylinderGeometry args={[0.12, 0.17, 1.4, 8]} />
+        <meshStandardMaterial color="#92400e" />
       </mesh>
 
-      <mesh position={[0, 1.9, 0]}>
-        <sphereGeometry args={[0.9, 12, 12]} />
-        <meshStandardMaterial color="#4ade80" />
+      <mesh position={[0, 1.55, 0]} castShadow>
+        <sphereGeometry args={[0.72, 12, 12]} />
+        <meshStandardMaterial color="#65a30d" />
       </mesh>
     </group>
   );
@@ -87,26 +134,45 @@ function MissionMarker({
   position,
   color,
   label,
+  onClick,
 }: {
   position: [number, number, number];
   color: string;
   label: string;
+  onClick: () => void;
 }) {
+  const ref = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+
+    ref.current.position.y =
+      position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.08;
+  });
+
   return (
-    <group position={position}>
-      <mesh>
-        <sphereGeometry args={[0.35, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.5}
-        />
+    <group
+      ref={ref}
+      position={position}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      <mesh castShadow>
+        <sphereGeometry args={[0.28, 16, 16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.12} />
+      </mesh>
+
+      <mesh position={[0, -0.35, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 0.7, 8]} />
+        <meshStandardMaterial color="#64748b" />
       </mesh>
 
       <Text
-        position={[0, 0.75, 0]}
-        fontSize={0.3}
-        color="#172033"
+        position={[0, 0.55, 0]}
+        fontSize={0.22}
+        color="#0f172a"
         anchorX="center"
         anchorY="middle"
       >
@@ -116,99 +182,24 @@ function MissionMarker({
   );
 }
 
-function Player({
-  keys,
+function StudentAvatar({
   position,
-  setPosition,
+  onMove,
 }: {
-  keys: React.MutableRefObject<Record<string, boolean>>;
-  position: [number, number, number];
-  setPosition: React.Dispatch<
-    React.SetStateAction<[number, number, number]>
-  >;
+  position: React.MutableRefObject<THREE.Vector3>;
+  onMove: (position: THREE.Vector3) => void;
 }) {
-  const playerRef = useRef<THREE.Group>(null);
+  const group = useRef<THREE.Group>(null);
 
-  useFrame(() => {
-    const speed = 0.09;
-
-    let x = position[0];
-    let z = position[2];
-
-    if (keys.current["w"] || keys.current["ArrowUp"]) {
-      z -= speed;
-    }
-
-    if (keys.current["s"] || keys.current["ArrowDown"]) {
-      z += speed;
-    }
-
-    if (keys.current["a"] || keys.current["ArrowLeft"]) {
-      x -= speed;
-    }
-
-    if (keys.current["d"] || keys.current["ArrowRight"]) {
-      x += speed;
-    }
-
-    x = THREE.MathUtils.clamp(x, -13, 13);
-    z = THREE.MathUtils.clamp(z, -13, 13);
-
-    if (x !== position[0] || z !== position[2]) {
-      setPosition([x, 0.65, z]);
-    }
-
-    if (playerRef.current) {
-      playerRef.current.position.set(x, 0.65, z);
-    }
-  });
-
-  return (
-    <group ref={playerRef} position={position}>
-      <mesh>
-        <capsuleGeometry args={[0.35, 0.7, 6, 12]} />
-        <meshStandardMaterial color="#ec4899" />
-      </mesh>
-
-      <mesh position={[0, 0.75, 0]}>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <meshStandardMaterial color="#f8c9a0" />
-      </mesh>
-
-      <mesh position={[0, 0.98, 0]}>
-        <sphereGeometry args={[0.32, 16, 16]} />
-        <meshStandardMaterial color="#334155" />
-      </mesh>
-
-      <Text
-        position={[0, 1.5, 0]}
-        fontSize={0.25}
-        color="#172033"
-        anchorX="center"
-        anchorY="middle"
-      >
-        YOU
-      </Text>
-    </group>
-  );
-}
-
-function Campus() {
   const keys = useRef<Record<string, boolean>>({});
-
-  const [position, setPosition] = useState<[number, number, number]>([
-    0,
-    0.65,
-    6,
-  ]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      keys.current[event.key] = true;
+      keys.current[event.key.toLowerCase()] = true;
     };
 
     const up = (event: KeyboardEvent) => {
-      keys.current[event.key] = false;
+      keys.current[event.key.toLowerCase()] = false;
     };
 
     window.addEventListener("keydown", down);
@@ -220,222 +211,451 @@ function Campus() {
     };
   }, []);
 
+  useFrame((_, delta) => {
+    if (!group.current) return;
+
+    const speed = 4 * delta;
+
+    let moved = false;
+
+    if (keys.current["w"] || keys.current["arrowup"]) {
+      position.current.z -= speed;
+      moved = true;
+    }
+
+    if (keys.current["s"] || keys.current["arrowdown"]) {
+      position.current.z += speed;
+      moved = true;
+    }
+
+    if (keys.current["a"] || keys.current["arrowleft"]) {
+      position.current.x -= speed;
+      moved = true;
+    }
+
+    if (keys.current["d"] || keys.current["arrowright"]) {
+      position.current.x += speed;
+      moved = true;
+    }
+
+    position.current.x = THREE.MathUtils.clamp(position.current.x, -14, 14);
+    position.current.z = THREE.MathUtils.clamp(position.current.z, -9, 9);
+
+    group.current.position.copy(position.current);
+
+    if (moved) {
+      group.current.rotation.y = Math.atan2(
+        position.current.x - group.current.position.x,
+        position.current.z - group.current.position.z
+      );
+    }
+
+    onMove(position.current);
+  });
+
+  return (
+    <group ref={group} position={position.current}>
+      {/* Body */}
+      <mesh position={[0, 0.65, 0]} castShadow>
+        <capsuleGeometry args={[0.32, 0.55, 6, 12]} />
+        <meshStandardMaterial color="#7c3aed" />
+      </mesh>
+
+      {/* Head */}
+      <mesh position={[0, 1.35, 0]} castShadow>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#f3c7a6" />
+      </mesh>
+
+      {/* Hair */}
+      <mesh position={[0, 1.55, 0]}>
+        <sphereGeometry args={[0.31, 16, 10]} />
+        <meshStandardMaterial color="#1e293b" />
+      </mesh>
+
+      {/* Feet */}
+      <mesh position={[-0.16, 0.12, 0]} castShadow>
+        <boxGeometry args={[0.2, 0.18, 0.35]} />
+        <meshStandardMaterial color="#1e293b" />
+      </mesh>
+
+      <mesh position={[0.16, 0.12, 0]} castShadow>
+        <boxGeometry args={[0.2, 0.18, 0.35]} />
+        <meshStandardMaterial color="#1e293b" />
+      </mesh>
+    </group>
+  );
+}
+
+function CampusScene({
+  onMissionClick,
+}: {
+  onMissionClick: (mission: Mission) => void;
+}) {
+  const avatarPosition = useRef(new THREE.Vector3(0, 0, 5));
+
+  const [, setAvatarPosition] = useState({
+    x: 0,
+    z: 5,
+  });
+
+  const handleMove = (position: THREE.Vector3) => {
+    setAvatarPosition({
+      x: position.x,
+      z: position.z,
+    });
+  };
+
   return (
     <>
-      <ambientLight intensity={1.5} />
+      <ambientLight intensity={1.2} />
 
       <directionalLight
-        position={[5, 10, 5]}
+        position={[8, 12, 8]}
         intensity={2}
         castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
       />
 
-      <Ground />
+      {/* Ground */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+        position={[0, -0.05, 0]}
+      >
+        <planeGeometry args={[32, 22]} />
+        <meshStandardMaterial color="#dbe7d2" />
+      </mesh>
 
-      <Building
-        position={[-7, 0, -6]}
-        color="#fbcfe8"
-        label="Learning Center"
-        width={5}
-        depth={3.5}
-      />
+      {/* Main paths */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.01, 0]}
+      >
+        <planeGeometry args={[4, 22]} />
+        <meshStandardMaterial color="#e7e5e4" />
+      </mesh>
 
-      <Building
-        position={[7, 0, -6]}
-        color="#dbeafe"
-        label="Science Lab"
-        width={5}
-        depth={3.5}
-      />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.012, 0]}
+      >
+        <planeGeometry args={[32, 3]} />
+        <meshStandardMaterial color="#e7e5e4" />
+      </mesh>
 
-      <Building
-        position={[-7, 0, 4]}
-        color="#dcfce7"
-        label="Eco Center"
-        width={5}
-        depth={3.5}
-      />
-
-      <Building
-        position={[7, 0, 4]}
+      {/* Buildings */}
+      <CampusBuilding
+        position={[-8, 0, -5]}
         color="#fef3c7"
+        width={4}
+        depth={3}
+        height={2.8}
+        label="Learning Center"
+      />
+
+      <CampusBuilding
+        position={[8, 0, -5]}
+        color="#dbeafe"
+        width={4}
+        depth={3}
+        height={2.8}
+        label="Science Lab"
+      />
+
+      <CampusBuilding
+        position={[-8, 0, 5]}
+        color="#dcfce7"
+        width={4}
+        depth={3}
+        height={2.8}
+        label="Eco Center"
+      />
+
+      <CampusBuilding
+        position={[8, 0, 5]}
+        color="#fce7f3"
+        width={4}
+        depth={3}
+        height={2.8}
         label="Innovation Hub"
-        width={5}
-        depth={3.5}
       />
 
+      {/* Trees */}
+      <Tree position={[-3, 0, -7]} />
+      <Tree position={[3, 0, -7]} scale={0.9} />
+      <Tree position={[-4, 0, 7]} scale={0.85} />
+      <Tree position={[4, 0, 7]} />
+      <Tree position={[-13, 0, 0]} scale={0.8} />
+      <Tree position={[13, 0, 0]} scale={0.8} />
+
+      {/* Mission markers */}
       <MissionMarker
-        position={[-1.5, 1, -1]}
-        color="#06b6d4"
+        position={[-2.5, 1.1, -2]}
+        color="#ec4899"
         label="AI Mentor"
+        onClick={() => onMissionClick(missions[0])}
       />
 
       <MissionMarker
-        position={[1.5, 1, -1]}
-        color="#22c55e"
+        position={[2.5, 1.1, 2]}
+        color="#3b82f6"
         label="Water Mission"
+        onClick={() => onMissionClick(missions[1])}
       />
 
       <MissionMarker
-        position={[0, 1, 3]}
+        position={[0, 1.1, -5]}
         color="#f59e0b"
-        label="Start Mission"
+        label="Rewards"
+        onClick={() => onMissionClick(missions[2])}
       />
 
-      <Tree position={[-12, 0, -10]} />
-      <Tree position={[-10, 0, 10]} />
-      <Tree position={[11, 0, -10]} />
-      <Tree position={[11, 0, 10]} />
-      <Tree position={[-2, 0, -10]} />
-      <Tree position={[3, 0, -10]} />
-      <Tree position={[-12, 0, 0]} />
-      <Tree position={[12, 0, 0]} />
-
-      <Player
-        keys={keys}
-        position={position}
-        setPosition={setPosition}
+      {/* Student */}
+      <StudentAvatar
+        position={avatarPosition}
+        onMove={handleMove}
       />
 
+      {/* Camera */}
       <OrbitControls
-        enablePan={false}
-        maxPolarAngle={Math.PI / 2.15}
+        enablePan
+        enableZoom
         minDistance={8}
-        maxDistance={20}
+        maxDistance={24}
+        maxPolarAngle={Math.PI / 2.15}
+        target={[0, 0, 0]}
       />
     </>
   );
 }
 
 export default function WorldPage() {
-  const router = useRouter();
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(
+    null
+  );
+
+  const controlsText = useMemo(
+    () => [
+      "W / ↑",
+      "S / ↓",
+      "A / ←",
+      "D / →",
+    ],
+    []
+  );
 
   return (
-    <main className="min-h-screen bg-[#eef7f0] text-slate-900">
-      <header className="border-b border-emerald-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+    <main className="min-h-screen bg-[#f8f7f4] text-slate-900">
+      {/* Header */}
+      <section className="mx-auto max-w-7xl px-6 pb-6 pt-10 md:px-10 md:pt-14">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">
-              Smart Education
-            </p>
-
-            <h1 className="text-2xl font-black">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+              <Map className="h-4 w-4" />
               3D Learning World
+            </div>
+
+            <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">
+              Explore.
+              <span className="block text-slate-500">
+                Learn by doing.
+              </span>
             </h1>
+
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              Explore the learning campus, discover interactive missions and
+              connect your learning with real-world problems.
+            </p>
           </div>
 
-          <button
-            onClick={() => router.push("/learn")}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold transition hover:bg-slate-50"
-          >
-            Back to Learning Hub
-          </button>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-950">
+                  Student World
+                </p>
+
+                <p className="text-xs text-slate-500">
+                  Explore the campus
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
+      </section>
 
-      <div className="mx-auto max-w-7xl px-5 py-6">
-        <section className="mb-5 flex flex-col gap-4 rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-                PLAYABLE PROTOTYPE
+      {/* World */}
+      <section className="mx-auto max-w-7xl px-6 pb-10 md:px-10">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          {/* World toolbar */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+            <div>
+              <h2 className="font-bold text-slate-950">
+                Campus Explorer
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Click a mission marker to open it.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {controlsText.map((control) => (
+                <span
+                  key={control}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600"
+                >
+                  {control}
+                </span>
+              ))}
+
+              <span className="rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-white">
+                Move
               </span>
+            </div>
+          </div>
 
-              <span className="text-sm text-slate-500">
-                Explore • Learn • Discover
+          {/* Canvas */}
+          <div className="relative h-[520px] bg-[#eef3eb] md:h-[650px]">
+            <Canvas
+              shadows
+              camera={{
+                position: [15, 14, 17],
+                fov: 45,
+              }}
+            >
+              <CampusScene
+                onMissionClick={setSelectedMission}
+              />
+            </Canvas>
+
+            {/* Legend */}
+            <div className="absolute bottom-4 left-4 rounded-2xl border border-white/70 bg-white/90 p-4 shadow-lg backdrop-blur">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+                Mission markers
+              </p>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="h-2.5 w-2.5 rounded-full bg-pink-500" />
+                  AI Mentor
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                  Water Mission
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  Rewards
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mission cards */}
+      <section className="mx-auto max-w-7xl px-6 pb-14 md:px-10">
+        <div className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            What you can discover
+          </p>
+
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">
+            Learning destinations
+          </h2>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {missions.map((mission) => (
+            <Link
+              href={mission.href}
+              key={mission.id}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl ${mission.color}`}
+                >
+                  {mission.icon}
+                </div>
+
+                <ArrowRight className="h-5 w-5 text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-600" />
+              </div>
+
+              <h3 className="mt-5 font-bold text-slate-950">
+                {mission.title}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {mission.description}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Mission modal */}
+      {selectedMission && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-5 backdrop-blur-sm"
+          onClick={() => setSelectedMission(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${selectedMission.color}`}
+              >
+                {selectedMission.icon}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMission(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <h2 className="mt-5 text-2xl font-bold text-slate-950">
+              {selectedMission.title}
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {selectedMission.description}
+            </p>
+
+            <div className="mt-6 flex items-center gap-2 rounded-xl bg-[#f8f7f4] p-3">
+              <Zap className="h-4 w-4 text-amber-500" />
+
+              <span className="text-sm text-slate-600">
+                Visit this destination to continue your learning journey.
               </span>
             </div>
 
-            <h2 className="mt-2 text-2xl font-black">
-              Welcome to your virtual campus
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-600">
-              Move your avatar around the campus and discover learning
-              missions.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-5 py-3 text-sm">
-            <p className="font-bold text-slate-700">
-              Controls
-            </p>
-
-            <p className="mt-1 text-slate-500">
-              W A S D / Arrow Keys to move
-            </p>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-xl">
-          <div className="h-[650px] w-full">
-            <Canvas camera={{ position: [0, 12, 16], fov: 55 }}>
-              <color attach="background" args={["#dff4ff"]} />
-
-              <Campus />
-            </Canvas>
-          </div>
-        </section>
-
-        <section className="mt-5 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-cyan-100 bg-white p-5 shadow-sm">
-            <div className="text-2xl">🤖</div>
-
-            <h3 className="mt-2 font-black">
-              AI Mentor
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Get guidance while exploring the world.
-            </p>
-
-            <button
-              onClick={() => router.push("/assistant")}
-              className="mt-4 text-sm font-bold text-pink-600 hover:text-pink-700"
+            <Link
+              href={selectedMission.href}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              Open AI Mentor →
-            </button>
+              Open {selectedMission.title}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
-
-          <div className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
-            <div className="text-2xl">💧</div>
-
-            <h3 className="mt-2 font-black">
-              Campus Water Challenge
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Investigate water usage and earn XP.
-            </p>
-
-            <button
-              onClick={() => router.push("/missions/campus-water")}
-              className="mt-4 text-sm font-bold text-emerald-600 hover:text-emerald-700"
-            >
-              Open Mission →
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="text-2xl">🏆</div>
-
-            <h3 className="mt-2 font-black">
-              Your Progress
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Complete missions and build your learning portfolio.
-            </p>
-
-            <button
-              onClick={() => router.push("/rewards")}
-              className="mt-4 text-sm font-bold text-violet-600 hover:text-violet-700"
-            >
-              View Rewards →
-            </button>
-          </div>
-        </section>
-      </div>
+        </div>
+      )}
     </main>
   );
 }

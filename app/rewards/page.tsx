@@ -1,9 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Award,
+  CheckCircle2,
+  Lock,
+  Sparkles,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
+type Badge = {
+  id: number;
+  name: string;
+  description: string;
+  icon: string | null;
+};
+
+type Profile = {
+  xp: number;
+  level: number;
+  streak: number;
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
 const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,424 +35,327 @@ const supabase =
     ? createClient(supabaseUrl, supabaseKey)
     : null;
 
-type Profile = {
-  id: string;
-  xp: number;
-  level: number;
-  streak: number;
+const badgeRules: Record<string, (profile: Profile) => boolean> = {
+  "First Step": (profile) => profile.xp > 0,
+  "XP Hunter": (profile) => profile.xp >= 100,
+  "Water Hero": () => false,
+  "3-Day Learner": (profile) => profile.streak >= 3,
+  "Level Up": (profile) => profile.level >= 2,
 };
 
-type Badge = {
-  id: number;
-  name: string;
-  description: string;
-  icon: string;
-};
+function getBadgeIcon(name: string) {
+  if (name.includes("Water")) return "💧";
+  if (name.includes("XP")) return "⚡";
+  if (name.includes("Streak")) return "🔥";
+  if (name.includes("Level")) return "🏆";
+  return "🌱";
+}
 
 export default function RewardsPage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile>({
+    xp: 0,
+    level: 1,
+    streak: 0,
+  });
+
   const [badges, setBadges] = useState<Badge[]>([]);
-  const [earnedBadges, setEarnedBadges] = useState<number[]>([]);
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadRewards();
-  }, []);
-
-  async function loadRewards() {
-    try {
-      setLoading(true);
-      setError("");
-
+    async function loadRewards() {
       if (!supabase) {
-        setError(
-          "Supabase configuration is missing. Please check your .env.local file."
-        );
         setLoading(false);
         return;
       }
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (userError) {
-        throw userError;
-      }
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-      if (!user) {
-        setError("Please log in to view your rewards.");
-        setLoading(false);
-        return;
-      }
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("xp, level, streak")
+          .eq("id", user.id)
+          .single();
 
-      // Get profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, xp, level, streak")
-        .eq("id", user.id)
-        .single();
+        if (profileData) {
+          setProfile({
+            xp: profileData.xp || 0,
+            level: profileData.level || 1,
+            streak: profileData.streak || 0,
+          });
+        }
 
-      if (profileError) {
-        throw profileError;
-      }
+        const { data: badgeData } = await supabase
+          .from("badges")
+          .select("id, name, description, icon")
+          .order("id", { ascending: true });
 
-      setProfile(profileData);
+        setBadges(badgeData || []);
 
-      // Get all badges
-      const { data: badgeData, error: badgeError } = await supabase
-        .from("badges")
-        .select("id, name, description, icon")
-        .order("id");
-
-      if (badgeError) {
-        throw badgeError;
-      }
-
-      setBadges(badgeData || []);
-
-      // Get already earned badges
-      const { data: userBadgeData, error: userBadgeError } =
-        await supabase
+        const { data: userBadgeData } = await supabase
           .from("user_badges")
           .select("badge_id")
           .eq("user_id", user.id);
 
-      if (userBadgeError) {
-        throw userBadgeError;
+        setEarnedBadgeIds(
+          (userBadgeData || []).map((item) => Number(item.badge_id))
+        );
+      } catch (error) {
+        console.error("Failed to load rewards:", error);
+      } finally {
+        setLoading(false);
       }
-
-      const existingBadgeIds =
-        userBadgeData?.map((item) => item.badge_id) || [];
-
-      const badgesToUnlock: number[] = [];
-
-      // Check Campus Water Challenge
-      let waterChallengeCompleted = false;
-
-      const { data: mission } = await supabase
-        .from("missions")
-        .select("id")
-        .eq("title", "Campus Water Challenge")
-        .maybeSingle();
-
-      if (mission) {
-        const { data: submission } = await supabase
-          .from("mission_submissions")
-          .select("id")
-          .eq("mission_id", mission.id)
-          .eq("user_id", user.id)
-          .eq("status", "completed")
-          .maybeSingle();
-
-        waterChallengeCompleted = !!submission;
-      }
-
-      // Check each badge
-      for (const badge of badgeData || []) {
-        let shouldUnlock = false;
-
-        if (badge.name === "First Step" && profileData.xp > 0) {
-          shouldUnlock = true;
-        }
-
-        if (badge.name === "XP Hunter" && profileData.xp >= 100) {
-          shouldUnlock = true;
-        }
-
-        if (
-          badge.name === "Water Hero" &&
-          waterChallengeCompleted
-        ) {
-          shouldUnlock = true;
-        }
-
-        if (
-          badge.name === "3-Day Learner" &&
-          profileData.streak >= 3
-        ) {
-          shouldUnlock = true;
-        }
-
-        if (
-          badge.name === "Level Up" &&
-          profileData.level >= 2
-        ) {
-          shouldUnlock = true;
-        }
-
-        if (
-          shouldUnlock &&
-          !existingBadgeIds.includes(badge.id)
-        ) {
-          badgesToUnlock.push(badge.id);
-        }
-      }
-
-      // Save newly unlocked badges
-      for (const badgeId of badgesToUnlock) {
-        const { error: insertError } = await supabase
-          .from("user_badges")
-          .insert({
-            user_id: user.id,
-            badge_id: badgeId,
-          });
-
-        if (!insertError) {
-          existingBadgeIds.push(badgeId);
-        }
-      }
-
-      setEarnedBadges(existingBadgeIds);
-    } catch (err) {
-      console.error("Rewards error:", err);
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong while loading rewards."
-      );
-    } finally {
-      setLoading(false);
     }
-  }
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-5xl mb-4">🏆</div>
+    loadRewards();
+  }, []);
 
-          <p className="text-slate-400">
-            Loading your rewards...
-          </p>
-        </div>
-      </main>
-    );
-  }
+  const earnedCount = earnedBadgeIds.length;
 
-  if (error) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-white px-6 py-10">
-        <div className="max-w-3xl mx-auto">
+  const levelProgress = Math.min((profile.xp % 500) / 500, 1);
 
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8">
-
-            <div className="text-5xl mb-4">
-              ⚠️
-            </div>
-
-            <h1 className="text-2xl font-bold mb-3">
-              Rewards could not load
-            </h1>
-
-            <p className="text-red-300">
-              {error}
-            </p>
-
-            <button
-              onClick={loadRewards}
-              className="mt-6 px-5 py-3 rounded-xl bg-white text-slate-950 font-semibold hover:bg-slate-200"
-            >
-              Try Again
-            </button>
-
-          </div>
-
-        </div>
-      </main>
-    );
-  }
+  const nextLevelXP = profile.level * 500;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white px-6 py-10">
+    <main className="min-h-screen bg-[#f8f7f4] text-slate-900">
+      {/* Hero */}
+      <section className="mx-auto max-w-7xl px-6 pb-10 pt-10 md:px-10 md:pt-14">
+        <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-10">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">
+              <Trophy className="h-4 w-4" />
+              Rewards & Achievements
+            </div>
 
-      <div className="max-w-6xl mx-auto">
+            <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">
+              Your progress
+              <span className="block text-slate-500">
+                deserves recognition.
+              </span>
+            </h1>
 
-        {/* Header */}
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
+              Earn XP, unlock achievements and build a record of what you
+              have accomplished.
+            </p>
 
-        <div className="mb-10">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <Zap className="h-5 w-5 text-amber-500" />
+                <p className="mt-3 text-2xl font-bold text-slate-950">
+                  {profile.xp}
+                </p>
+                <p className="text-sm text-slate-500">Total XP</p>
+              </div>
 
-          <p className="text-emerald-400 font-semibold mb-2">
-            YOUR ACHIEVEMENTS
-          </p>
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <Trophy className="h-5 w-5 text-violet-600" />
+                <p className="mt-3 text-2xl font-bold text-slate-950">
+                  {profile.level}
+                </p>
+                <p className="text-sm text-slate-500">Current level</p>
+              </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            Rewards & Badges 🏆
-          </h1>
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <Award className="h-5 w-5 text-emerald-600" />
+                <p className="mt-3 text-2xl font-bold text-slate-950">
+                  {earnedCount}
+                </p>
+                <p className="text-sm text-slate-500">Achievements</p>
+              </div>
+            </div>
+          </div>
 
-          <p className="text-slate-400 max-w-2xl">
-            Learn, complete challenges, build your streak and
-            unlock achievements as you progress.
-          </p>
+          {/* Level card */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+              <Sparkles className="h-5 w-5" />
+            </div>
 
+            <p className="mt-5 text-sm font-medium text-slate-500">
+              Current level
+            </p>
+
+            <div className="mt-1 flex items-end gap-2">
+              <span className="text-4xl font-bold text-slate-950">
+                {profile.level}
+              </span>
+
+              <span className="mb-1 text-sm text-slate-500">
+                / next level
+              </span>
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-2 flex justify-between text-xs">
+                <span className="text-slate-500">Level progress</span>
+                <span className="font-semibold text-slate-700">
+                  {Math.round(levelProgress * 100)}%
+                </span>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-slate-900 transition-all duration-700"
+                  style={{
+                    width: `${Math.max(levelProgress * 100, 4)}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-xs text-slate-500">
+                {Math.max(nextLevelXP - profile.xp, 0)} XP until the next
+                level.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Badges */}
+      <section className="mx-auto max-w-7xl px-6 pb-14 md:px-10">
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+              Achievement collection
+            </p>
+
+            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">
+              Badges
+            </h2>
+          </div>
+
+          <span className="hidden text-sm text-slate-500 md:block">
+            {earnedCount} / {badges.length} unlocked
+          </span>
         </div>
 
-        {/* Stats */}
-
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-
-            <p className="text-slate-400 text-sm mb-2">
-              Total XP
+        {loading ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+            <p className="mt-4 text-sm text-slate-500">
+              Loading achievements...
             </p>
-
-            <p className="text-4xl font-bold text-yellow-400">
-              {profile?.xp || 0}
-            </p>
-
           </div>
+        ) : badges.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <Award className="mx-auto h-10 w-10 text-slate-300" />
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <h3 className="mt-4 text-lg font-bold text-slate-900">
+              No achievements yet
+            </h3>
 
-            <p className="text-slate-400 text-sm mb-2">
-              Level
+            <p className="mt-2 text-sm text-slate-500">
+              Complete learning activities to start earning badges.
             </p>
-
-            <p className="text-4xl font-bold text-purple-400">
-              {profile?.level || 1}
-            </p>
-
           </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-
-            <p className="text-slate-400 text-sm mb-2">
-              Learning Streak
-            </p>
-
-            <p className="text-4xl font-bold text-orange-400">
-              {profile?.streak || 0} 🔥
-            </p>
-
-          </div>
-
-        </section>
-
-        {/* Badges */}
-
-        <section>
-
-          <div className="mb-6">
-
-            <h2 className="text-2xl font-bold">
-              Your Badges
-            </h2>
-
-            <p className="text-slate-400 mt-1">
-              {earnedBadges.length} of {badges.length} unlocked
-            </p>
-
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {badges.map((badge) => {
+              const earned = earnedBadgeIds.includes(badge.id);
 
-              const earned = earnedBadges.includes(badge.id);
+              const rule = badgeRules[badge.name];
+
+              const eligible =
+                earned || (rule ? rule(profile) : false);
 
               return (
                 <div
                   key={badge.id}
-                  className={`rounded-2xl border p-6 transition ${
+                  className={`rounded-3xl border p-6 transition duration-200 hover:-translate-y-1 ${
                     earned
-                      ? "border-yellow-500/40 bg-yellow-500/10"
-                      : "border-slate-800 bg-slate-900"
+                      ? "border-amber-200 bg-white shadow-sm hover:shadow-md"
+                      : "border-slate-200 bg-white"
                   }`}
                 >
-
                   <div className="flex items-start justify-between">
-
                     <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl ${
+                      className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl ${
                         earned
-                          ? "bg-yellow-500/20"
-                          : "bg-slate-800 grayscale opacity-50"
+                          ? "bg-amber-50"
+                          : "bg-slate-100 grayscale"
                       }`}
                     >
-                      {badge.icon}
+                      {getBadgeIcon(badge.name)}
                     </div>
 
-                    <span
-                      className={`text-sm px-3 py-1 rounded-full ${
-                        earned
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-slate-800 text-slate-500"
-                      }`}
-                    >
-                      {earned ? "Unlocked" : "Locked"}
-                    </span>
-
+                    {earned ? (
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Unlocked
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                        <Lock className="h-3.5 w-3.5" />
+                        Locked
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="text-xl font-bold mt-5">
+                  <h3 className="mt-6 text-lg font-bold text-slate-950">
                     {badge.name}
                   </h3>
 
-                  <p className="text-slate-400 text-sm mt-2">
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
                     {badge.description}
                   </p>
 
-                  {earned && (
-                    <div className="mt-5 text-yellow-400 text-sm font-semibold">
-                      🏆 Achievement unlocked!
-                    </div>
-                  )}
-
+                  <div className="mt-5 border-t border-slate-100 pt-4">
+                    {earned ? (
+                      <p className="text-xs font-medium text-emerald-700">
+                        Achievement unlocked — keep going.
+                      </p>
+                    ) : eligible ? (
+                      <p className="text-xs font-medium text-amber-700">
+                        You have met the requirement. Keep learning to
+                        unlock it.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400">
+                        Continue learning to unlock this achievement.
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
-
             })}
-
           </div>
+        )}
+      </section>
 
-        </section>
+      {/* Motivation */}
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-12 md:px-10">
+          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+                Keep building
+              </p>
 
-        {/* Continue Learning */}
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">
+                Every lesson adds to your learning record.
+              </h2>
 
-        <section className="mt-12 rounded-2xl border border-slate-800 bg-slate-900 p-8">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                Your XP, missions, achievements and demonstrated skills come
+                together to form your digital learning portfolio.
+              </p>
+            </div>
 
-          <h2 className="text-2xl font-bold mb-3">
-            Keep Learning 🚀
-          </h2>
-
-          <p className="text-slate-400 mb-6">
-            Complete lessons, quizzes and real-world challenges
-            to unlock more achievements.
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-
-            <a
-              href="/learn"
-              className="px-5 py-3 rounded-xl bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400"
-            >
-              Continue Learning
-            </a>
-
-            <a
-              href="/missions"
-              className="px-5 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700"
-            >
-              View Missions
-            </a>
-
-            <a
-              href="/leaderboard"
-              className="px-5 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700"
-            >
-              Leaderboard
-            </a>
-
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-white">
+              <Trophy className="h-7 w-7" />
+            </div>
           </div>
-
-        </section>
-
-      </div>
-
+        </div>
+      </section>
     </main>
   );
 }

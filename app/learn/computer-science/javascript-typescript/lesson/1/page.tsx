@@ -81,7 +81,7 @@ export default function JavaScriptTypeScriptLesson() {
             </p>
 
             <pre className="overflow-x-auto rounded-xl bg-black p-5 text-sm text-green-400">
-              <code>{`console.log("Hello, EcoQuest!");`}</code>
+              <code>{`console.log("Hello, SkillSprint!");`}</code>
             </pre>
 
             <p className="mt-4 text-sm text-slate-400">

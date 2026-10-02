@@ -8,7 +8,7 @@ export default function Navbar() {
           </div>
 
           <div>
-            <h1 className="text-lg font-bold text-slate-900">EcoQuest</h1>
+            <h1 className="text-lg font-bold text-slate-900">SkillSprint</h1>
             <p className="text-xs text-slate-500">Smart Education</p>
           </div>
         </div>

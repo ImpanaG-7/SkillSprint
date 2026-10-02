@@ -157,7 +157,7 @@ export default function StreakPage() {
               </p>
 
               <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                Complete one EcoQuest activity
+                Complete one SkillSprint activity
               </h2>
 
               <p className="mt-2 leading-7 text-slate-600">

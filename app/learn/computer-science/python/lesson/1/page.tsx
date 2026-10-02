@@ -193,7 +193,7 @@ export default function PythonLessonPage() {
             </div>
 
             <pre className="overflow-x-auto p-6 text-sm leading-7 text-green-300">
-              <code>{`print("Hello, EcoQuest!")`}</code>
+              <code>{`print("Hello, SkillSprint!")`}</code>
             </pre>
 
           </div>
@@ -206,7 +206,7 @@ export default function PythonLessonPage() {
           <div className="mt-4 rounded-2xl bg-green-50 p-5">
 
             <p className="font-mono font-semibold text-green-700">
-              Hello, EcoQuest!
+              Hello, SkillSprint!
             </p>
 
           </div>

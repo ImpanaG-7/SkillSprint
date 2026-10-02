@@ -117,7 +117,7 @@ export default function LoginPage() {
 
               <div className="text-left">
                 <h1 className="text-2xl font-bold text-slate-900">
-                  EcoQuest
+                  SkillSprint
                 </h1>
 
                 <p className="text-xs font-medium text-slate-500">
@@ -146,7 +146,7 @@ export default function LoginPage() {
 
               <p className="mt-2 text-sm text-slate-500">
                 {isSignup
-                  ? "Create your EcoQuest student account."
+                  ? "Create your SkillSprint student account."
                   : "Log in to continue your learning journey."}
               </p>
             </div>
@@ -315,7 +315,7 @@ export default function LoginPage() {
               href="/"
               className="text-sm font-semibold text-slate-500 transition hover:text-indigo-600"
             >
-              ← Back to EcoQuest
+              ← Back to SkillSprint
             </Link>
           </div>
 
